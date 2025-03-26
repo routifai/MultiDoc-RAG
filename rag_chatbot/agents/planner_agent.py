@@ -8,8 +8,8 @@ import instructor
 from atomic_agents.agents.base_agent import BaseAgent, BaseAgentConfig
 from atomic_agents.lib.base.base_io_schema import BaseIOSchema
 from atomic_agents.lib.components.system_prompt_generator import SystemPromptGenerator
-from rag_chatbot.agents.routing_agent import DocMetadata
-from rag_chatbot.config import ChatConfig
+from .routing_agent import DocMetadata
+from ..config import ChatConfig
 
 client = instructor.from_openai(OpenAI(api_key=ChatConfig.api_key))
 

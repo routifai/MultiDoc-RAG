@@ -7,18 +7,18 @@ from rich.panel import Panel
 from rich.markdown import Markdown
 from rich.progress import Progress, SpinnerColumn, TextColumn
 import tiktoken
-
+import certifi
+import requests
 from atomic_agents.agents.base_agent import BaseAgentConfig
-from rag_chatbot.agents.planner_agent import planner_agent, RAGPlannerAgentInputSchema, RAGPlannerAgentOutputSchema
-from rag_chatbot.agents.query_agent import query_agent, RAGQueryAgentInputSchema, RAGQueryAgentOutputSchema
-from rag_chatbot.agents.qa_agent import qa_agent, RAGQuestionAnsweringAgentInputSchema, RAGQuestionAnsweringAgentOutputSchema
-from rag_chatbot.agents.review_agent import review_agent, RAGReviewAgentInputSchema, RAGReviewAgentOutputSchema
-from rag_chatbot.agents.routing_agent import routing_agent, RoutingAgentInputSchema, RoutingAgentOutputSchema, DocMetadata
-from rag_chatbot.agents.metadata_extraction_agent import metadata_extraction_agent, MetadataExtractionAgentInputSchema, MetadataExtractionAgentOutputSchema
-from rag_chatbot.context_providers import RAGContextProvider, ChunkItem
-from rag_chatbot.services.chroma_db import ChromaDBService
-from rag_chatbot.config import CHUNK_SIZE, CHUNK_OVERLAP, NUM_CHUNKS_TO_RETRIEVE, CHROMA_PERSIST_DIR, MAX_CONTEXT_LENGTH, MAX_TOTAL_TOKENS, ChatConfig
-
+from .agents.planner_agent import planner_agent, RAGPlannerAgentInputSchema, RAGPlannerAgentOutputSchema
+from .agents.query_agent import query_agent, RAGQueryAgentInputSchema, RAGQueryAgentOutputSchema
+from .agents.qa_agent import qa_agent, RAGQuestionAnsweringAgentInputSchema, RAGQuestionAnsweringAgentOutputSchema
+from .agents.review_agent import review_agent, RAGReviewAgentInputSchema, RAGReviewAgentOutputSchema
+from .agents.routing_agent import routing_agent, RoutingAgentInputSchema, RoutingAgentOutputSchema, DocMetadata
+from .agents.metadata_extraction_agent import metadata_extraction_agent, MetadataExtractionAgentInputSchema, MetadataExtractionAgentOutputSchema
+from .context_providers import RAGContextProvider, ChunkItem
+from .services.chroma_db import ChromaDBService
+from .config import CHUNK_SIZE, CHUNK_OVERLAP, NUM_CHUNKS_TO_RETRIEVE, CHROMA_PERSIST_DIR, MAX_CONTEXT_LENGTH, MAX_TOTAL_TOKENS, ChatConfig
 MAX_SUB_QUERIES = 4
 
 console = Console()
@@ -41,8 +41,18 @@ def download_pdf(doc_id: str, url: str) -> str:
         console.print(f"[bold green]{doc_id} already exists, skipping download.[/bold green]")
     else:
         console.print(f"[bold yellow]Downloading {doc_id}...[/bold yellow]")
-        wget.download(url, output_path)
-        console.print(f"[bold green]{doc_id} downloaded![/bold green]")
+        try:
+            # Use requests with certifi for SSL verification
+            response = requests.get(url, verify=certifi.where(), stream=True)
+            response.raise_for_status()  # Raise an error for bad status codes
+            with open(output_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            console.print(f"[bold green]{doc_id} downloaded![/bold green]")
+        except requests.exceptions.RequestException as e:
+            console.print(f"[bold red]Error downloading {doc_id}: {e}[/bold red]")
+            raise
     return output_path
 
 def extract_text_from_pdf(file_path: str) -> str:

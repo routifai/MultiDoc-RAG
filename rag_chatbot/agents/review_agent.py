@@ -6,7 +6,7 @@ from typing import List
 from pydantic import Field
 from atomic_agents.agents.base_agent import BaseIOSchema, BaseAgent, BaseAgentConfig
 from atomic_agents.lib.components.system_prompt_generator import SystemPromptGenerator
-from rag_chatbot.config import ChatConfig
+from ..config import ChatConfig
 
 class RAGReviewAgentInputSchema(BaseIOSchema):
     """Input schema for the Review Agent."""
